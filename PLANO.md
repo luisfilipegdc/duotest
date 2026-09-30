@@ -35,5 +35,14 @@ compartilhar por link (a trilha vai compactada dentro do link) e exportar/import
 4. **Produtividade:** importar planilha, gerar exercícios com IA, biblioteca pública de trilhas (por matéria/série/BNCC)
 5. **Monetização (produto):** núcleo gratuito e sem limite de atividades; plano Escola (gestão, relatórios, IA)
 
+## Prioridades após a análise do mural (ver REFERENCIAS.md)
+1. **IA: gerar trilha a partir de texto, PDF, "folhinha" (imagem) ou planilha**
+2. **Modelo "público = grátis e ilimitado"**; privado, turmas e IA no plano pago
+3. Novos tipos: imagem, linha do tempo, forca, áudio (ler em voz alta), fórmulas
+4. Lição do dia pelo WhatsApp (link + lembrete)
+5. Modos de jogo sobre as mesmas questões (corrida, forca, desafio da turma)
+6. Acessibilidade (leitura em voz alta, fonte para dislexia, alto contraste)
+7. Programa de professores formadores/embaixadores
+
 ## Concorrentes
 Ver `CONCORRENTES.md`.
