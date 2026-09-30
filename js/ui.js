@@ -78,4 +78,38 @@ async function copyText(text) {
   }
 }
 
-Object.assign(window.Duo, { h, shuffle, uid, normalize, splitList, toast, modal, copyText });
+/** Lê um texto em voz alta com a voz do navegador (grátis, funciona offline na maioria dos aparelhos). */
+function speak(text, lang = 'pt-BR', rate = 1) {
+  if (!('speechSynthesis' in window) || !text) { toast('Seu navegador não tem leitura em voz alta.'); return; }
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = lang;
+  u.rate = rate;
+  const voice = speechSynthesis.getVoices().find(v => v.lang.replace('_', '-').toLowerCase().startsWith(lang.toLowerCase()));
+  if (voice) u.voice = voice;
+  speechSynthesis.speak(u);
+}
+
+/** Reduz uma imagem enviada pelo professor para caber no link compartilhável. */
+function shrinkImage(file, maxSide = 560, quality = 0.7) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.width * scale);
+      c.height = Math.round(img.height * scale);
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, c.width, c.height);
+      ctx.drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(img.src);
+      const webp = c.toDataURL('image/webp', quality);
+      resolve(webp.startsWith('data:image/webp') ? webp : c.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = () => reject(new Error('Imagem inválida.'));
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+Object.assign(window.Duo, { h, shuffle, uid, normalize, splitList, toast, modal, copyText, speak, shrinkImage });

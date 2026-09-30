@@ -3,9 +3,20 @@
 // Contrato do render(q, api):
 //   api.setReady(bool)   habilita/desabilita o botão "Verificar"
 //   api.onCheck(fn)      fn() => { correct: bool, answer: string } chamada ao verificar
-//   api.finish(result)   encerra sozinho (usado pelo "associar", que não tem botão Verificar)
+//   api.finish(result)   encerra sozinho (tipos com auto: true, que não têm botão Verificar)
+//
+// Campos opcionais do tipo:
+//   auto            o exercício se encerra sozinho (associar, forca)
+//   answerText(q)   resposta mostrada quando o aluno pula
+//   speechText(q)   texto lido pelo botão "Ouvir"
 (function () {
-  const { h, shuffle, normalize } = Duo;
+  const { h, shuffle, normalize, speak } = Duo;
+
+  /** Letra-base para comparação na forca (Á, Ã, Â → A; Ç → C). */
+  function baseLetter(ch) {
+    return ch.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+  }
+  const isLetter = ch => /\p{L}|\p{N}/u.test(ch);
 
   /** Divide "A água ferve a [100] graus" em partes de texto e lacunas. */
   function parseBlanks(text) {
@@ -18,7 +29,10 @@
 
   const TYPES = {
     associar: {
-      label: 'Associar pares', icon: '🔗',
+      label: 'Associar pares', icon: '🔗', auto: true,
+      examples: 'Palavra ↔ tradução · país ↔ capital · fórmula ↔ nome · autor ↔ obra',
+      answerText: q => q.pairs.map(p => `${p.a} ↔ ${p.b}`).join(' · '),
+      speechText: q => q.prompt,
       hint: 'Ligue cada item ao seu par. Ótimo para vocabulário, conceitos, datas, fórmulas.',
       blank: () => ({ prompt: 'Associe os pares', pairs: [{ a: '', b: '' }, { a: '', b: '' }, { a: '', b: '' }] }),
       validate(q) {
@@ -68,6 +82,8 @@
 
     multipla: {
       label: 'Múltipla escolha', icon: '🔘',
+      examples: 'Qualquer matéria: conceitos, interpretação, cálculo',
+      speechText: q => [q.prompt, ...q.options.filter(o => o.trim())].join('. '),
       hint: 'Uma pergunta e de 2 a 6 alternativas, uma correta.',
       blank: () => ({ prompt: '', options: ['', '', '', ''], answer: 0 }),
       validate(q) {
@@ -100,6 +116,8 @@
 
     completar: {
       label: 'Complete a frase', icon: '✏️',
+      examples: 'Definições · regras de gramática · leis da Física',
+      speechText: q => parseBlanks(q.text).map(p => p.blank ? ' lacuna ' : p.text).join(''),
       hint: 'Escreva a frase e coloque entre [colchetes] as palavras que o aluno deve completar.',
       blank: () => ({ text: '', distractors: [] }),
       validate(q) {
@@ -147,6 +165,8 @@
 
     ordenar: {
       label: 'Ordenar palavras', icon: '🧩',
+      examples: 'Tradução · sintaxe · montar uma definição',
+      speechText: q => q.prompt,
       hint: 'Escreva a frase correta. O aluno recebe as palavras embaralhadas para montar.',
       blank: () => ({ prompt: 'Monte a frase', answer: '', distractors: [] }),
       validate(q) {
@@ -181,6 +201,8 @@
 
     vf: {
       label: 'Verdadeiro ou falso', icon: '⚖️',
+      examples: 'Afirmações rápidas de revisão',
+      speechText: q => q.prompt,
       hint: 'Uma afirmação que o aluno julga como verdadeira ou falsa.',
       blank: () => ({ prompt: '', answer: true }),
       validate(q) { return q.prompt.trim() ? null : 'Escreva a afirmação.'; },
@@ -204,8 +226,135 @@
       },
     },
 
+    sequencia: {
+      label: 'Linha do tempo / sequência', icon: '📅',
+      examples: 'Datas históricas · fases da mitose · etapas de uma receita · ordem de operações',
+      hint: 'Escreva os itens na ordem correta (datas, etapas de um processo, fases). O aluno recebe embaralhado.',
+      blank: () => ({ prompt: 'Coloque na ordem correta', items: ['', '', ''] }),
+      validate(q) {
+        const filled = q.items.filter(i => i.trim());
+        if (filled.length < 3) return 'Preencha pelo menos 3 itens.';
+        if (filled.length !== q.items.length) return 'Há itens vazios.';
+        return null;
+      },
+      answerText: q => q.items.map((t, i) => `${i + 1}. ${t}`).join('  '),
+      speechText: q => q.prompt,
+      render(q, api) {
+        let order = shuffle(q.items.map((t, i) => ({ t, i })));
+        // Garante que não comece já na ordem certa
+        if (order.every((o, k) => o.i === k)) order = [...order.slice(1), order[0]];
+        const placed = [];
+        const listEl = h('ol', { class: 'seq-list' });
+        const bankEl = h('div', { class: 'bank column' });
+        function draw() {
+          listEl.replaceChildren(...placed.map((o, pos) => h('li', null, h('button', {
+            class: 'seq-item placed', title: 'Toque para devolver',
+            onClick: () => { placed.splice(pos, 1); draw(); },
+          }, h('span', { class: 'seq-num' }, pos + 1), h('span', null, o.t)))),
+          ...Array.from({ length: q.items.length - placed.length }, (_, k) =>
+            h('li', { class: 'seq-slot' }, h('span', { class: 'seq-num' }, placed.length + k + 1))));
+          bankEl.replaceChildren(...order.filter(o => !placed.includes(o)).map(o => h('button', {
+            class: 'seq-item', onClick: () => { placed.push(o); draw(); },
+          }, o.t)));
+          api.setReady(placed.length === q.items.length);
+        }
+        draw();
+        api.onCheck(() => ({
+          correct: placed.every((o, k) => normalize(o.t) === normalize(q.items[k])),
+          answer: q.items.map((t, i) => `${i + 1}. ${t}`).join('  '),
+        }));
+        return h('div', { class: 'ex' },
+          h('h2', { class: 'ex-title' }, q.prompt || 'Coloque na ordem correta'),
+          h('p', { class: 'muted small' }, 'Toque nos itens na ordem certa. Toque de novo para desfazer.'),
+          listEl, bankEl);
+      },
+    },
+
+    forca: {
+      label: 'Forca (palavra oculta)', icon: '🔤', auto: true,
+      examples: 'Vocabulário · termos técnicos · nomes de personagens',
+      hint: 'O aluno descobre a palavra letra por letra a partir de uma dica. Até 6 erros.',
+      blank: () => ({ prompt: '', answer: '' }),
+      validate(q) {
+        if (!q.prompt.trim()) return 'Escreva a dica.';
+        const letters = [...q.answer].filter(isLetter).length;
+        if (letters < 2) return 'A palavra precisa ter pelo menos 2 letras.';
+        if (letters > 30) return 'Use no máximo 30 letras.';
+        return null;
+      },
+      answerText: q => q.answer.trim(),
+      speechText: q => q.prompt,
+      render(q, api) {
+        const MAX = 6;
+        const word = q.answer.trim();
+        const guessed = new Set();
+        let errors = 0;
+        let over = false;
+        const wordEl = h('div', { class: 'hang-word', 'aria-live': 'polite' });
+        const livesEl = h('div', { class: 'hang-lives' });
+        const keys = {};
+        const kb = h('div', { class: 'keyboard' }, [...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'].map(L => {
+          keys[L] = h('button', { class: 'key', onClick: () => guess(L) }, L);
+          return keys[L];
+        }));
+        const hidden = () => [...word].filter(ch => isLetter(ch) && !guessed.has(baseLetter(ch)));
+        function draw() {
+          wordEl.replaceChildren(...word.split(' ').map(w => h('span', { class: 'hang-group' }, [...w].map(ch =>
+            isLetter(ch)
+              ? h('span', { class: 'hang-letter' + (guessed.has(baseLetter(ch)) ? ' shown' : '') }, guessed.has(baseLetter(ch)) || over ? ch : '\u00a0')
+              : h('span', { class: 'hang-sep' }, ch)))));
+          livesEl.replaceChildren(h('span', { class: 'muted small' }, 'Tentativas: '),
+            ...Array.from({ length: MAX }, (_, i) => h('span', { class: 'life' + (i < MAX - errors ? '' : ' lost') })));
+        }
+        function guess(L) {
+          if (over || guessed.has(L)) return;
+          guessed.add(L);
+          const hit = [...word].some(ch => isLetter(ch) && baseLetter(ch) === L);
+          keys[L].classList.add(hit ? 'hit' : 'miss');
+          keys[L].disabled = true;
+          if (!hit) errors++;
+          if (!hidden().length) { over = true; draw(); api.finish({ correct: true, answer: word }); return; }
+          if (errors >= MAX) { over = true; draw(); api.finish({ correct: false, answer: word }); return; }
+          draw();
+        }
+        api.onKey(k => { const L = baseLetter(k); if (/^[A-Z]$/.test(L)) guess(L); });
+        draw();
+        return h('div', { class: 'ex' },
+          h('p', { class: 'ex-kicker' }, 'Descubra a palavra'),
+          h('h2', { class: 'ex-title' }, q.prompt),
+          wordEl, livesEl, kb);
+      },
+    },
+
+    ditado: {
+      label: 'Ditado (ouvir e escrever)', icon: '🎧',
+      examples: 'Idiomas · alfabetização · ortografia',
+      hint: 'O aluno ouve a frase (voz do navegador) e escreve o que ouviu. Ótimo para idiomas e alfabetização.',
+      blank: () => ({ text: '', lang: 'pt-BR' }),
+      validate(q) { return q.text.trim() ? null : 'Escreva a frase que será falada.'; },
+      answerText: q => q.text,
+      speechText: () => '',
+      render(q, api) {
+        const input = h('input', {
+          class: 'input big', type: 'text', placeholder: 'Escreva o que você ouviu', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false',
+          onInput: () => api.setReady(input.value.trim().length > 0),
+        });
+        const play = rate => speak(q.text, q.lang || 'pt-BR', rate);
+        setTimeout(() => play(1), 300);
+        api.onCheck(() => ({ correct: normalize(input.value) === normalize(q.text), answer: q.text }));
+        return h('div', { class: 'ex' },
+          h('h2', { class: 'ex-title' }, 'Escreva o que você ouvir'),
+          h('div', { class: 'listen' },
+            h('button', { class: 'listen-btn', 'aria-label': 'Ouvir', onClick: () => play(1) }, '🔊'),
+            h('button', { class: 'listen-btn slow', 'aria-label': 'Ouvir devagar', onClick: () => play(0.6) }, '🐢')),
+          input);
+      },
+    },
+
     digitar: {
       label: 'Digitar resposta', icon: '⌨️',
+      examples: 'Resultado de conta · fórmula química · data',
+      speechText: q => q.prompt,
       hint: 'O aluno digita a resposta. Aceita variações (uma por linha); ignora maiúsculas e acentos.',
       blank: () => ({ prompt: '', answers: [] }),
       validate(q) {

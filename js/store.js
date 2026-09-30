@@ -34,6 +34,8 @@
           q('vf', { prompt: 'As nuvens são formadas por vapor d\'água condensado.', answer: true }),
           q('ordenar', { prompt: 'Monte a frase', answer: 'A chuva devolve a água ao solo', distractors: ['sol', 'nunca'] }),
           q('multipla', { prompt: 'Qual é a principal fonte de energia do ciclo da água?', options: ['O Sol', 'O vento', 'A Lua', 'O núcleo da Terra'], answer: 0 }),
+          q('sequencia', { prompt: 'Coloque as etapas do ciclo da água na ordem', items: ['Evaporação da água dos oceanos', 'Condensação do vapor nas nuvens', 'Precipitação (chuva)', 'Infiltração no solo'] }),
+          q('forca', { prompt: 'Nome da água que cai das nuvens em forma de gelo', answer: 'Granizo' }),
         ] },
       ],
     },
@@ -50,6 +52,7 @@
         { id: 'l2', title: 'Frases', questions: [
           q('ordenar', { prompt: 'Traduza: "O gato está na mesa"', answer: 'The cat is on the table', distractors: ['dog', 'under'] }),
           q('completar', { text: 'The [bird] can fly and the [fish] can swim.', distractors: ['dog', 'cat'] }),
+          q('ditado', { text: 'The cat is black', lang: 'en-US' }),
         ] },
       ],
     },
@@ -63,6 +66,50 @@
           q('vf', { prompt: 'O primeiro presidente civil do Brasil foi Prudente de Morais.', answer: true }),
           q('associar', { prompt: 'Associe o período ao ano de início', pairs: [
             { a: 'República Velha', b: '1889' }, { a: 'Era Vargas', b: '1930' }, { a: 'Estado Novo', b: '1937' }] }),
+          q('sequencia', { prompt: 'Coloque os acontecimentos em ordem cronológica', items: ['Independência do Brasil', 'Abolição da escravidão', 'Proclamação da República', 'Revolução de 1930'] }),
+          q('forca', { prompt: 'Sobrenome do marechal que proclamou a República', answer: 'Deodoro da Fonseca' }),
+        ] },
+      ],
+    },
+    {
+      id: 'exemplo-portugues', discipline: 'Língua Portuguesa', level: '5º ano', title: 'Classes de palavras',
+      description: 'Substantivo, adjetivo e verbo na prática.',
+      lessons: [
+        { id: 'l1', title: 'Substantivo, adjetivo e verbo', questions: [
+          q('associar', { prompt: 'Associe cada palavra à sua classe', pairs: [
+            { a: 'casa', b: 'substantivo' }, { a: 'bonito', b: 'adjetivo' }, { a: 'correr', b: 'verbo' }, { a: 'rapidamente', b: 'advérbio' }] }),
+          q('completar', { text: 'Na frase "O menino [alegre] [correu] pelo parque", há um adjetivo e um verbo.', distractors: ['parque', 'pelo'] }),
+          q('multipla', { prompt: 'Qual palavra é um substantivo próprio?', options: ['Brasil', 'cidade', 'bonito', 'andar'], answer: 0 }),
+          q('forca', { prompt: 'Classe de palavra que indica ação, estado ou fenômeno da natureza', answer: 'Verbo' }),
+          q('ditado', { text: 'A professora explicou a lição com paciência.', lang: 'pt-BR' }),
+        ] },
+      ],
+    },
+    {
+      id: 'exemplo-matematica', discipline: 'Matemática', level: '6º ano', title: 'Frações',
+      description: 'Leitura, equivalência e comparação de frações.',
+      lessons: [
+        { id: 'l1', title: 'Entendendo frações', questions: [
+          q('completar', { text: 'Na fração 3/8, o [3] é o numerador e o [8] é o denominador.', distractors: ['11', '5'] }),
+          q('associar', { prompt: 'Associe a fração ao número decimal', pairs: [
+            { a: '1/2', b: '0,5' }, { a: '1/4', b: '0,25' }, { a: '3/4', b: '0,75' }, { a: '1/5', b: '0,2' }] }),
+          q('sequencia', { prompt: 'Coloque as frações da menor para a maior', items: ['1/8', '1/4', '1/2', '3/4'] }),
+          q('multipla', { prompt: 'Qual fração é equivalente a 1/2?', options: ['2/4', '1/3', '3/4', '2/3'], answer: 0 }),
+          q('digitar', { prompt: 'Quanto é 1/2 + 1/4? (responda como fração)', answers: ['3/4'] }),
+          q('vf', { prompt: '3/6 é maior que 1/2.', answer: false }),
+        ] },
+      ],
+    },
+    {
+      id: 'exemplo-geografia', discipline: 'Geografia', level: 'Ensino Fundamental II', title: 'Regiões do Brasil',
+      description: 'Estados, capitais e características das regiões.',
+      lessons: [
+        { id: 'l1', title: 'Capitais', questions: [
+          q('associar', { prompt: 'Associe o estado à capital', pairs: [
+            { a: 'Bahia', b: 'Salvador' }, { a: 'Pará', b: 'Belém' }, { a: 'Paraná', b: 'Curitiba' }, { a: 'Goiás', b: 'Goiânia' }, { a: 'Ceará', b: 'Fortaleza' }] }),
+          q('multipla', { prompt: 'Qual é a maior região do Brasil em área?', options: ['Norte', 'Nordeste', 'Centro-Oeste', 'Sudeste'], answer: 0 }),
+          q('forca', { prompt: 'Capital do Brasil', answer: 'Brasília' }),
+          q('vf', { prompt: 'O Brasil é dividido em cinco regiões.', answer: true }),
         ] },
       ],
     },

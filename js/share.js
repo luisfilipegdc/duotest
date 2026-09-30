@@ -36,6 +36,12 @@
     return withIds(JSON.parse(new TextDecoder().decode(bytes)));
   }
 
+  /** Só aceita imagens https ou embutidas (data:image). */
+  function safeImage(src) {
+    if (typeof src !== 'string') return undefined;
+    return /^https:\/\//.test(src) || /^data:image\/(png|jpe?g|webp|gif);base64,/.test(src) ? src : undefined;
+  }
+
   /** Garante a estrutura esperada em trilhas vindas de fora (link ou arquivo). */
   function withIds(course) {
     if (!course || !Array.isArray(course.lessons)) throw new Error('Arquivo não é uma trilha válida.');
@@ -48,7 +54,7 @@
       lessons: course.lessons.map(l => ({
         id: l.id || Duo.uid(),
         title: String(l.title || 'Lição'),
-        questions: (l.questions || []).filter(q => Duo.Exercises.TYPES[q.type]).map(q => ({ ...q, id: Duo.uid() })),
+        questions: (l.questions || []).filter(q => Duo.Exercises.TYPES[q.type]).map(q => ({ ...q, id: Duo.uid(), image: safeImage(q.image) })),
       })),
     };
   }

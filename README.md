@@ -26,6 +26,14 @@ com vidas, XP, sequência de dias e repetição dos exercícios errados.
 | 🧩 Ordenar palavras | Frase correta (+ palavras para confundir) |
 | ⚖️ Verdadeiro ou falso | Afirmação + V/F |
 | ⌨️ Digitar resposta | Pergunta + respostas aceitas (ignora maiúsculas e acentos) |
+| 📅 Linha do tempo / sequência | Itens na ordem correta (datas, etapas, fases) — o aluno recebe embaralhado |
+| 🔤 Forca | Dica + palavra secreta (acentos revelados junto com a letra) |
+| 🎧 Ditado | Frase + idioma; o aluno ouve (voz do navegador) e escreve |
+
+Em qualquer exercício: **🖼 imagem** (link ou enviada do computador, reduzida automaticamente) e
+botão **🔊 Ouvir** (lê a pergunta em voz alta — acessibilidade).
+
+Trilhas de exemplo: Ciências, Inglês, História, Língua Portuguesa, Matemática e Geografia.
 
 ## Estrutura
 ```

@@ -2,7 +2,7 @@
 //   #/editar/:curso           dados da trilha + lista de lições
 //   #/editar/:curso/:licao    exercícios de uma lição
 (function () {
-  const { h, Store, Exercises, uid, splitList, toast } = Duo;
+  const { h, Store, Exercises, uid, splitList, toast, speak, shrinkImage } = Duo;
   const { TYPES } = Exercises;
 
   let saveTimer = null;
@@ -182,6 +182,47 @@
       ];
     },
 
+    sequencia(q, course, redraw) {
+      const rows = h('div', { class: 'opts-edit' });
+      function draw() {
+        rows.replaceChildren(...q.items.map((it, i) => h('div', { class: 'opt-row' },
+          h('span', { class: 'seq-num' }, i + 1),
+          h('input', { class: 'input', value: it, placeholder: i === 0 ? 'Ex.: 1500 – Chegada dos portugueses' : `Item ${i + 1}`, onInput: e => { q.items[i] = e.target.value; autosave(course); redraw(); } }),
+          h('button', { class: 'icon-btn', title: 'Subir', disabled: i === 0, onClick: () => { [q.items[i - 1], q.items[i]] = [q.items[i], q.items[i - 1]]; autosave(course); draw(); } }, '↑'),
+          h('button', { class: 'icon-btn danger', title: 'Remover', disabled: q.items.length <= 3, onClick: () => { q.items.splice(i, 1); autosave(course); draw(); redraw(); } }, '✕'))));
+      }
+      draw();
+      return [
+        field('Instrução', q, 'prompt', course, { placeholder: 'Ex.: Coloque as fases da mitose na ordem' }),
+        h('span', { class: 'field-label' }, 'Itens na ordem correta (o aluno recebe embaralhado)'),
+        rows,
+        h('button', { class: 'btn small', disabled: q.items.length >= 8, onClick: () => { q.items.push(''); autosave(course); draw(); redraw(); } }, '+ Item'),
+      ];
+    },
+
+    forca(q, course, redraw) {
+      return [
+        field('Dica', q, 'prompt', course, { multiline: true, placeholder: 'Ex.: Glândula que produz a insulina', onInput: redraw }),
+        field('Palavra ou expressão secreta', q, 'answer', course, {
+          placeholder: 'Ex.: Pâncreas', onInput: redraw,
+          help: 'Acentos são revelados junto com a letra (A revela Á, Ã, Â). Espaços e hífens já aparecem.',
+        }),
+      ];
+    },
+
+    ditado(q, course, redraw) {
+      const langs = [['pt-BR', 'Português'], ['en-US', 'Inglês'], ['es-ES', 'Espanhol'], ['fr-FR', 'Francês'], ['it-IT', 'Italiano'], ['de-DE', 'Alemão']];
+      return [
+        field('Frase que será falada', q, 'text', course, { multiline: true, placeholder: 'Ex.: The book is on the table', onInput: redraw }),
+        h('div', { class: 'row' },
+          h('label', { class: 'field' }, h('span', { class: 'field-label' }, 'Idioma da voz'),
+            h('select', { class: 'input', onChange: e => { q.lang = e.target.value; autosave(course); } },
+              langs.map(([v, l]) => h('option', { value: v, selected: (q.lang || 'pt-BR') === v }, l)))),
+          h('button', { class: 'btn small', onClick: () => speak(q.text, q.lang || 'pt-BR') }, '🔊 Ouvir')),
+        h('span', { class: 'help' }, 'A voz vem do navegador do aluno; pode variar entre aparelhos.'),
+      ];
+    },
+
     digitar(q, course, redraw) {
       return [
         field('Pergunta', q, 'prompt', course, { multiline: true, onInput: redraw }),
@@ -192,6 +233,40 @@
       ];
     },
   };
+
+  /** Imagem opcional do exercício: link ou envio do computador (reduzida para caber no link). */
+  function imageField(q, course) {
+    const box = h('div', { class: 'image-field' });
+    function draw() {
+      if (q.image) {
+        box.replaceChildren(
+          h('img', { class: 'thumb', src: q.image, alt: '' }),
+          h('div', { class: 'image-side' },
+            h('input', { class: 'input', value: q.imageAlt || '', placeholder: 'Descrição da imagem (acessibilidade)', onInput: e => { q.imageAlt = e.target.value; autosave(course); } }),
+            h('button', { class: 'btn small ghost danger', onClick: () => { delete q.image; delete q.imageAlt; autosave(course); draw(); } }, 'Remover imagem')));
+        return;
+      }
+      const file = h('input', { type: 'file', accept: 'image/*', hidden: true });
+      file.addEventListener('change', async () => {
+        if (!file.files[0]) return;
+        try { q.image = await shrinkImage(file.files[0]); autosave(course); draw(); } catch (e) { toast(e.message); }
+      });
+      const url = h('input', { class: 'input', placeholder: 'Cole o link de uma imagem (https://…)' });
+      box.replaceChildren(
+        h('span', { class: 'field-label' }, '🖼 Imagem (opcional)'),
+        h('div', { class: 'row tight wrap' },
+          url,
+          h('button', { class: 'btn small', onClick: () => {
+            const v = url.value.trim();
+            if (!/^https:\/\//.test(v)) { toast('Use um link que comece com https://'); return; }
+            q.image = v; autosave(course); draw();
+          } }, 'Usar link'),
+          h('button', { class: 'btn small', onClick: () => file.click() }, 'Enviar do computador')),
+        file);
+    }
+    draw();
+    return box;
+  }
 
   function questionCard(q, i, lesson, course, drawAll) {
     const warn = h('span', { class: 'warn small' });
@@ -212,6 +287,7 @@
           }, '⧉'),
           h('button', { class: 'icon-btn danger', title: 'Excluir', onClick: () => { lesson.questions.splice(i, 1); saveNow(course); drawAll(); } }, '🗑'))),
       h('div', { class: 'q-body' }, EDITORS[q.type](q, course, redraw)),
+      imageField(q, course),
       warn);
   }
 
@@ -235,7 +311,7 @@
         const first = last.querySelector('input.input, textarea');
         if (first) first.focus({ preventScroll: true });
       },
-    }, h('span', { class: 'type-icon' }, t.icon), h('span', null, t.label)));
+    }, h('span', { class: 'type-icon' }, t.icon), h('span', null, t.label), t.examples && h('span', { class: 'type-examples' }, t.examples)));
 
     root.replaceChildren(
       Duo.Home.topbar(),

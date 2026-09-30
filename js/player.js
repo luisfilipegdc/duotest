@@ -1,6 +1,6 @@
 // Modo aluno: joga uma lição no estilo Duolingo (vidas, progresso, correção imediata, repetição dos erros).
 (function () {
-  const { h, Store, Exercises, copyText } = Duo;
+  const { h, Store, Exercises, copyText, speak } = Duo;
   const HEARTS = 5;
   const XP_PER_QUESTION = 10;
 
@@ -63,13 +63,20 @@
         onKey: fn => { keyFn = fn; },
         finish: result => showResult(result),
       };
-      const el = Exercises.TYPES[item.q.type].render(item.q, api);
-      stage.replaceChildren(item.retry ? h('p', { class: 'retry-tag' }, '↻ Vamos tentar de novo') : '', el);
+      const type = Exercises.TYPES[item.q.type];
+      const el = type.render(item.q, api);
+      const spoken = type.speechText ? type.speechText(item.q) : '';
+      stage.replaceChildren(
+        h('div', { class: 'stage-tools' },
+          item.retry ? h('p', { class: 'retry-tag' }, '↻ Vamos tentar de novo') : h('span'),
+          spoken ? h('button', { class: 'speak', title: 'Ouvir a pergunta', onClick: () => speak(spoken) }, '🔊 Ouvir') : ''),
+        item.q.image ? h('figure', { class: 'q-image' }, h('img', { src: item.q.image, alt: item.q.imageAlt || 'Imagem do exercício', loading: 'lazy' })) : '',
+        el);
       stage.scrollTop = 0;
       footer.className = 'play-footer';
       footer.replaceChildren(h('div', { class: 'footer-inner' },
         h('button', { class: 'btn ghost', onClick: () => showResult({ correct: false, answer: skipAnswer(item.q, checkFn) }) }, 'Pular'),
-        checkFn || item.q.type !== 'associar' ? checkBtn : ''));
+        type.auto ? '' : checkBtn));
 
       setKeyHandler(e => {
         if (e.key === 'Enter') {
@@ -89,7 +96,8 @@
       function showResult(result) {
         if (answered) return;
         answered = true;
-        stage.querySelectorAll('button, input').forEach(b => { b.disabled = true; });
+        if ('speechSynthesis' in window) speechSynthesis.cancel();
+        stage.querySelectorAll('button:not(.speak), input').forEach(b => { b.disabled = true; });
         if (result.correct) {
           state.solved++;
           if (!item.retry) state.firstTry++;
@@ -112,7 +120,8 @@
     }
 
     function skipAnswer(q, checkFn) {
-      if (q.type === 'associar') return q.pairs.map(p => `${p.a} ↔ ${p.b}`).join(' · ');
+      const t = Exercises.TYPES[q.type];
+      if (t.answerText) return t.answerText(q);
       try { return checkFn ? checkFn().answer : ''; } catch { return ''; }
     }
 
@@ -174,5 +183,8 @@
     next();
   }
 
-  Duo.Player = { render, cleanup: () => setKeyHandler(null) };
+  Duo.Player = {
+    render,
+    cleanup: () => { setKeyHandler(null); if ('speechSynthesis' in window) speechSynthesis.cancel(); },
+  };
 })();
