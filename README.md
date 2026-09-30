@@ -62,7 +62,7 @@ Planejamento e próximos passos em [PLANO.md](PLANO.md); pesquisa em [CONCORRENT
 
 ## Publicar na Vercel
 1. Em [vercel.com](https://vercel.com) → **Add New… → Project** → importe o repositório do GitHub.
-2. **Framework Preset:** *Other*. Deixe *Build Command* vazio e *Output Directory* como `.` (já definido em `vercel.json`).
+2. **Framework Preset:** *Other*. Não precisa de *Build Command* nem de *Output Directory* (o site é estático).
 3. **Deploy.** A pasta `supabase/` não é publicada (`.vercelignore`).
 
 ## Publicar (GitHub Pages)
