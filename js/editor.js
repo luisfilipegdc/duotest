@@ -103,6 +103,7 @@
               location.hash = `#/editar/${course.id}/${l.id}`;
             },
           }, '+ Nova lição'),
+          h('button', { class: 'btn', onClick: () => { saveNow(course); Duo.AI.open(course); } }, '✨ Lições com IA'),
           h('a', { class: 'btn primary', href: `#/trilha/${course.id}`, onClick: () => saveNow(course) }, 'Ver trilha'))));
   }
 
