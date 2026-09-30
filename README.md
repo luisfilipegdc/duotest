@@ -60,6 +60,11 @@ js/app.js        rotas
 Sem dependências e sem etapa de build. Os dados ficam no navegador (localStorage).
 Planejamento e próximos passos em [PLANO.md](PLANO.md); pesquisa em [CONCORRENTES.md](CONCORRENTES.md).
 
+## Publicar na Vercel
+1. Em [vercel.com](https://vercel.com) → **Add New… → Project** → importe o repositório do GitHub.
+2. **Framework Preset:** *Other*. Deixe *Build Command* vazio e *Output Directory* como `.` (já definido em `vercel.json`).
+3. **Deploy.** A pasta `supabase/` não é publicada (`.vercelignore`).
+
 ## Publicar (GitHub Pages)
 Settings → Pages → *Deploy from a branch* → escolha a branch e a pasta `/ (root)` → Save.
 O site fica em `https://<usuario>.github.io/<repositorio>/`. O arquivo `.nojekyll` faz o GitHub servir os arquivos como estão.
