@@ -1,8 +1,9 @@
-// Persistência local (localStorage): lições do professor e estatísticas do aluno.
+// Persistência local (localStorage).
+// Modelo: Trilha { id, title, discipline, level, description, lessons: [ Lição { id, title, questions: [...] } ] }
 (function () {
   const { uid } = Duo;
-  const LESSONS_KEY = 'duoprof.lessons.v1';
-  const STATS_KEY = 'duoprof.stats.v1';
+  const COURSES_KEY = 'trilha.courses.v1';
+  const STATS_KEY = 'trilha.stats.v1';
 
   function read(key, fallback) {
     try {
@@ -14,88 +15,123 @@
     try { localStorage.setItem(key, JSON.stringify(value)); } catch { Duo.toast('Não foi possível salvar no navegador.'); }
   }
 
-  const SAMPLE = [
+  const q = (type, data) => ({ id: uid(), type, ...data });
+
+  const SAMPLES = [
     {
-      id: 'exemplo-ciencias', discipline: 'Ciências', title: 'Ciclo da água',
-      description: 'Estados físicos e etapas do ciclo da água.',
-      questions: [
-        { id: uid(), type: 'multipla', prompt: 'Como se chama a passagem do estado líquido para o gasoso?', options: ['Evaporação', 'Condensação', 'Solidificação', 'Fusão'], answer: 0 },
-        { id: uid(), type: 'completar', text: 'A água ferve a [100] graus Celsius e congela a [0] grau.', distractors: ['50', '10'] },
-        { id: uid(), type: 'associar', prompt: 'Associe cada processo ao que acontece', pairs: [
-          { a: 'Evaporação', b: 'Líquido → gasoso' },
-          { a: 'Condensação', b: 'Gasoso → líquido' },
-          { a: 'Solidificação', b: 'Líquido → sólido' },
-          { a: 'Fusão', b: 'Sólido → líquido' },
+      id: 'exemplo-ciencias', discipline: 'Ciências', level: '6º ano', title: 'Água e seus estados',
+      description: 'Estados físicos da matéria e o ciclo da água.',
+      lessons: [
+        { id: 'l1', title: 'Estados físicos', questions: [
+          q('associar', { prompt: 'Associe cada processo ao que acontece', pairs: [
+            { a: 'Evaporação', b: 'Líquido → gasoso' }, { a: 'Condensação', b: 'Gasoso → líquido' },
+            { a: 'Solidificação', b: 'Líquido → sólido' }, { a: 'Fusão', b: 'Sólido → líquido' }] }),
+          q('multipla', { prompt: 'Como se chama a passagem do estado líquido para o gasoso?', options: ['Evaporação', 'Condensação', 'Solidificação', 'Fusão'], answer: 0 }),
+          q('completar', { text: 'A água ferve a [100] graus Celsius e congela a [0] grau.', distractors: ['50', '10'] }),
+          q('digitar', { prompt: 'Qual a fórmula química da água?', answers: ['H2O', 'H₂O'] }),
         ] },
-        { id: uid(), type: 'vf', prompt: 'As nuvens são formadas por vapor d\'água condensado.', answer: true },
-        { id: uid(), type: 'ordenar', prompt: 'Monte a frase', answer: 'A chuva devolve a água ao solo', distractors: ['sol', 'nunca'] },
-        { id: uid(), type: 'digitar', prompt: 'Qual a fórmula química da água?', answers: ['H2O', 'H₂O'] },
+        { id: 'l2', title: 'Ciclo da água', questions: [
+          q('vf', { prompt: 'As nuvens são formadas por vapor d\'água condensado.', answer: true }),
+          q('ordenar', { prompt: 'Monte a frase', answer: 'A chuva devolve a água ao solo', distractors: ['sol', 'nunca'] }),
+          q('multipla', { prompt: 'Qual é a principal fonte de energia do ciclo da água?', options: ['O Sol', 'O vento', 'A Lua', 'O núcleo da Terra'], answer: 0 }),
+        ] },
       ],
     },
     {
-      id: 'exemplo-ingles', discipline: 'Inglês', title: 'Animals',
+      id: 'exemplo-ingles', discipline: 'Inglês', level: 'Iniciante', title: 'Animals',
       description: 'Vocabulário básico de animais.',
-      questions: [
-        { id: uid(), type: 'associar', prompt: 'Associe as palavras', pairs: [
-          { a: 'dog', b: 'cachorro' }, { a: 'cat', b: 'gato' }, { a: 'bird', b: 'pássaro' }, { a: 'fish', b: 'peixe' }, { a: 'horse', b: 'cavalo' },
+      lessons: [
+        { id: 'l1', title: 'Pets', questions: [
+          q('associar', { prompt: 'Associe as palavras', pairs: [
+            { a: 'dog', b: 'cachorro' }, { a: 'cat', b: 'gato' }, { a: 'bird', b: 'pássaro' }, { a: 'fish', b: 'peixe' }] }),
+          q('multipla', { prompt: 'Como se diz "gato" em inglês?', options: ['Cat', 'Cap', 'Car', 'Cut'], answer: 0 }),
+          q('digitar', { prompt: 'Escreva em inglês: cachorro', answers: ['dog'] }),
         ] },
-        { id: uid(), type: 'ordenar', prompt: 'Traduza: "O gato está na mesa"', answer: 'The cat is on the table', distractors: ['dog', 'under'] },
-        { id: uid(), type: 'completar', text: 'The [bird] can fly and the [fish] can swim.', distractors: ['dog', 'cat'] },
-        { id: uid(), type: 'multipla', prompt: 'Como se diz "cavalo" em inglês?', options: ['Horse', 'House', 'Mouse', 'Hose'], answer: 0 },
-        { id: uid(), type: 'digitar', prompt: 'Escreva em inglês: cachorro', answers: ['dog'] },
+        { id: 'l2', title: 'Frases', questions: [
+          q('ordenar', { prompt: 'Traduza: "O gato está na mesa"', answer: 'The cat is on the table', distractors: ['dog', 'under'] }),
+          q('completar', { text: 'The [bird] can fly and the [fish] can swim.', distractors: ['dog', 'cat'] }),
+        ] },
       ],
     },
     {
-      id: 'exemplo-matematica', discipline: 'Matemática', title: 'Frações',
-      description: 'Leitura e equivalência de frações.',
-      questions: [
-        { id: uid(), type: 'multipla', prompt: 'Qual fração é equivalente a 1/2?', options: ['2/4', '1/3', '3/4', '2/3'], answer: 0 },
-        { id: uid(), type: 'associar', prompt: 'Associe a fração ao decimal', pairs: [
-          { a: '1/2', b: '0,5' }, { a: '1/4', b: '0,25' }, { a: '3/4', b: '0,75' }, { a: '1/5', b: '0,2' },
+      id: 'exemplo-historia', discipline: 'História', level: 'Ensino Médio', title: 'Brasil República',
+      description: 'Da Proclamação da República à Era Vargas.',
+      lessons: [
+        { id: 'l1', title: 'Proclamação', questions: [
+          q('multipla', { prompt: 'Quem proclamou a República no Brasil?', options: ['Marechal Deodoro da Fonseca', 'Dom Pedro II', 'Getúlio Vargas', 'Floriano Peixoto'], answer: 0 }),
+          q('completar', { text: 'A República foi proclamada em [1889], encerrando o período do [Império].', distractors: ['1822', 'Estado Novo'] }),
+          q('vf', { prompt: 'O primeiro presidente civil do Brasil foi Prudente de Morais.', answer: true }),
+          q('associar', { prompt: 'Associe o período ao ano de início', pairs: [
+            { a: 'República Velha', b: '1889' }, { a: 'Era Vargas', b: '1930' }, { a: 'Estado Novo', b: '1937' }] }),
         ] },
-        { id: uid(), type: 'vf', prompt: '3/6 é maior que 1/2.', answer: false },
-        { id: uid(), type: 'completar', text: 'Na fração 3/8, o [3] é o numerador e o [8] é o denominador.', distractors: ['11', '5'] },
       ],
     },
   ];
 
   const Store = {
-    lessons() {
-      let list = read(LESSONS_KEY, null);
-      if (!list) { list = SAMPLE; write(LESSONS_KEY, list); }
+    courses() {
+      let list = read(COURSES_KEY, null);
+      if (!list) { list = SAMPLES; write(COURSES_KEY, list); }
       return list;
     },
-    get(id) { return this.lessons().find(l => l.id === id) || null; },
-    save(lesson) {
-      const list = this.lessons();
-      const i = list.findIndex(l => l.id === lesson.id);
-      lesson.updatedAt = Date.now();
-      if (i >= 0) list[i] = lesson; else list.push(lesson);
-      write(LESSONS_KEY, list);
-      return lesson;
+    get(id) { return this.courses().find(c => c.id === id) || null; },
+    save(course) {
+      const list = this.courses();
+      const i = list.findIndex(c => c.id === course.id);
+      course.updatedAt = Date.now();
+      if (i >= 0) list[i] = course; else list.push(course);
+      write(COURSES_KEY, list);
+      return course;
     },
-    remove(id) { write(LESSONS_KEY, this.lessons().filter(l => l.id !== id)); },
-    /** Importa uma lição de fora, sempre com id novo para não sobrescrever nada. */
-    importLesson(lesson) {
-      const copy = JSON.parse(JSON.stringify(lesson));
+    remove(id) { write(COURSES_KEY, this.courses().filter(c => c.id !== id)); },
+
+    create() {
+      return this.save({
+        id: uid(), title: 'Nova trilha', discipline: '', level: '', description: '',
+        lessons: [{ id: uid(), title: 'Lição 1', questions: [] }],
+      });
+    },
+
+    /** Trilha recebida por link: fica guardada como "estou fazendo" (somente leitura), mantendo o progresso. */
+    saveShared(course) {
+      const id = 'shared-' + course.id;
+      const prev = this.get(id);
+      return this.save({ ...course, id, sharedFrom: course.id, createdAt: prev ? prev.createdAt : Date.now() });
+    },
+
+    /** Cria uma cópia editável (ex.: importar arquivo ou reaproveitar a trilha de outro professor). */
+    duplicate(course) {
+      const copy = JSON.parse(JSON.stringify(course));
+      delete copy.sharedFrom;
       copy.id = uid();
-      copy.questions = (copy.questions || []).map(q => ({ ...q, id: uid() }));
+      copy.lessons = (copy.lessons || []).map(l => ({ ...l, id: uid(), questions: (l.questions || []).map(x => ({ ...x, id: uid() })) }));
       return this.save(copy);
     },
 
-    stats() { return read(STATS_KEY, { xp: 0, streak: 0, lastDay: null, completed: {} }); },
-    /** Registra uma lição concluída e atualiza XP e sequência de dias. */
-    recordRun(lessonId, xp, accuracy) {
+    stats() { return read(STATS_KEY, { xp: 0, streak: 0, lastDay: null, progress: {} }); },
+    lessonProgress(courseId, lessonId) {
+      const p = this.stats().progress[courseId];
+      return p ? p[lessonId] || null : null;
+    },
+    /** Registra lição concluída e atualiza XP e sequência de dias. */
+    recordRun(courseId, lessonId, xp, accuracy) {
       const s = this.stats();
-      const today = new Date().toISOString().slice(0, 10);
-      const yesterday = new Date(Date.now() - 864e5).toISOString().slice(0, 10);
-      if (s.lastDay !== today) s.streak = s.lastDay === yesterday ? s.streak + 1 : 1;
+      const day = d => new Date(d).toLocaleDateString('sv'); // AAAA-MM-DD no fuso local
+      const today = day(Date.now());
+      if (s.lastDay !== today) s.streak = s.lastDay === day(Date.now() - 864e5) ? s.streak + 1 : 1;
       s.lastDay = today;
       s.xp += xp;
-      const prev = s.completed[lessonId];
-      s.completed[lessonId] = { best: Math.max(accuracy, prev ? prev.best : 0), times: (prev ? prev.times : 0) + 1 };
+      const c = s.progress[courseId] = s.progress[courseId] || {};
+      const prev = c[lessonId];
+      c[lessonId] = { best: Math.max(accuracy, prev ? prev.best : 0), times: (prev ? prev.times : 0) + 1 };
       write(STATS_KEY, s);
       return s;
+    },
+    /** Sequência atual (zera se o aluno pulou um dia). */
+    currentStreak() {
+      const s = this.stats();
+      const day = d => new Date(d).toLocaleDateString('sv');
+      return s.lastDay === day(Date.now()) || s.lastDay === day(Date.now() - 864e5) ? s.streak : 0;
     },
   };
 

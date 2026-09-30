@@ -1,38 +1,39 @@
-# DuoProf — Plano
+# Trilha — Plano
 
-Plataforma no estilo Duolingo para **qualquer professor, de qualquer matéria**, criar lições gamificadas.
+> "O Duolingo da sua matéria": o professor monta a trilha em minutos, o aluno estuda um pouco todo dia.
+
+## Decisões
+- **Nome:** Trilha
+- **Público:** todos (Fundamental, Médio, Superior, cursos livres)
+- **Plataforma:** web primeiro, responsivo (celular no navegador)
+- **Modelo:** produto para muitos professores
+- **Notas/resultados:** fora do MVP (sem login, sem backend)
+
+## Modelo de conteúdo
+Trilha (disciplina + nível) → Lições (em sequência, desbloqueio progressivo) → Exercícios
 
 ## Tipos de exercício (MVP)
-- **Associar pares** — palavra ↔ tradução, país ↔ capital, fração ↔ decimal
-- **Múltipla escolha** — 2 a 6 opções
-- **Complete a frase** — lacunas marcadas com `[colchetes]` + banco de palavras
-- **Ordenar palavras** — montar a frase/sequência correta
+- **Associar pares**
+- **Múltipla escolha** (2 a 6 opções)
+- **Complete a frase** — lacunas com `[colchetes]` + banco de palavras com distratores
+- **Ordenar palavras**
 - **Verdadeiro ou falso**
 - **Digitar resposta** — ignora maiúsculas, acentos e pontuação final
 
-## Papéis
-- **Professor:** cria lições, testa, compartilha por link/QR/código, vê resultados (fase 2)
-- **Aluno:** joga com vidas, XP, sequência de dias e revisão dos erros
+## Experiência do aluno
+Mapa da trilha (lições desbloqueiam em sequência), vidas, XP, sequência de dias,
+correção imediata e repetição dos erros no fim da lição.
 
-## Arquitetura (recomendação: A agora, B depois)
-- **A. Só navegador:** localStorage + lição compactada dentro do link. Sem servidor.
-- **B. Com backend (ex.: Supabase):** login, turmas, painel de resultados.
+## Experiência do professor
+Criar trilha → lições → exercícios, com salvamento automático, "Testar lição",
+compartilhar por link (a trilha vai compactada dentro do link) e exportar/importar arquivo.
 
 ## Fases
-1. MVP navegador: editor, 6 tipos, modo jogo, link, importar/exportar JSON, exemplos
-2. Turmas e resultados (backend)
-3. Engajamento: trilhas, ranking, conquistas, revisão espaçada
-4. Produtividade: importar planilha, gerar exercícios com IA
-
-## Perguntas em aberto
-1. ~~Público~~ → **todos os públicos**
-2. ~~Resultados no MVP?~~ → **não, sem notas por enquanto** (opção A)
-3. Celular ou computador?
-4. Nome do produto?
-5. Uso interno ou produto para muitos professores?
+1. ✅ **MVP web sem backend** (entregue)
+2. **Contas e turmas:** login do professor, código da turma, painel de resultados, links curtos, QR Code
+3. **Engajamento:** ranking da turma, conquistas, revisão espaçada
+4. **Produtividade:** importar planilha, gerar exercícios com IA, biblioteca pública de trilhas (por matéria/série/BNCC)
+5. **Monetização (produto):** núcleo gratuito e sem limite de atividades; plano Escola (gestão, relatórios, IA)
 
 ## Concorrentes
 Ver `CONCORRENTES.md`.
-
-## Status
-Esqueleto inicial em `index.html` e `js/` (utilitários, armazenamento, compartilhamento). Telas ainda não implementadas — aguardando fechamento do plano.

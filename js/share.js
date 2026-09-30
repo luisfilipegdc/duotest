@@ -15,14 +15,15 @@
     return new Uint8Array(await new Response(out).arrayBuffer());
   }
 
-  function strip(lesson) {
-    const { id, updatedAt, ...rest } = lesson;
-    return { ...rest, questions: lesson.questions.map(({ id, ...q }) => q) };
+  /** Remove campos internos. Mantém ids da trilha e das lições para o progresso do aluno sobreviver a atualizações. */
+  function strip(course) {
+    const { updatedAt, sharedFrom, createdAt, ...rest } = course;
+    return { ...rest, lessons: course.lessons.map(l => ({ ...l, questions: l.questions.map(({ id, ...q }) => q) })) };
   }
 
   /** Prefixo "z" = comprimido (deflate), "j" = JSON puro (navegadores antigos). */
-  async function encode(lesson) {
-    const bytes = new TextEncoder().encode(JSON.stringify(strip(lesson)));
+  async function encode(course) {
+    const bytes = new TextEncoder().encode(JSON.stringify(strip(course)));
     if (typeof CompressionStream !== 'undefined') {
       return 'z' + toB64Url(await pipe(bytes, new CompressionStream('deflate-raw')));
     }
@@ -32,24 +33,38 @@
   async function decode(code) {
     let bytes = fromB64Url(code.slice(1));
     if (code[0] === 'z') bytes = await pipe(bytes, new DecompressionStream('deflate-raw'));
-    const lesson = JSON.parse(new TextDecoder().decode(bytes));
-    lesson.questions = (lesson.questions || []).map(q => ({ ...q, id: Duo.uid() }));
-    lesson.id = 'compartilhada';
-    return lesson;
+    return withIds(JSON.parse(new TextDecoder().decode(bytes)));
   }
 
-  async function linkFor(lesson) {
+  /** Garante a estrutura esperada em trilhas vindas de fora (link ou arquivo). */
+  function withIds(course) {
+    if (!course || !Array.isArray(course.lessons)) throw new Error('Arquivo não é uma trilha válida.');
+    return {
+      id: course.id || Duo.uid(),
+      title: String(course.title || 'Trilha sem nome'),
+      discipline: String(course.discipline || ''),
+      level: String(course.level || ''),
+      description: String(course.description || ''),
+      lessons: course.lessons.map(l => ({
+        id: l.id || Duo.uid(),
+        title: String(l.title || 'Lição'),
+        questions: (l.questions || []).filter(q => Duo.Exercises.TYPES[q.type]).map(q => ({ ...q, id: Duo.uid() })),
+      })),
+    };
+  }
+
+  async function linkFor(course) {
     const base = location.href.split('#')[0];
-    return `${base}#/l/${await encode(lesson)}`;
+    return `${base}#/l/${await encode(course)}`;
   }
 
-  function downloadJson(lesson) {
-    const blob = new Blob([JSON.stringify(strip(lesson), null, 2)], { type: 'application/json' });
-    const a = Duo.h('a', { href: URL.createObjectURL(blob), download: `${lesson.title || 'licao'}.json`.replace(/[\\/:*?"<>|]/g, '-') });
+  function downloadJson(course) {
+    const blob = new Blob([JSON.stringify(strip(course), null, 2)], { type: 'application/json' });
+    const a = Duo.h('a', { href: URL.createObjectURL(blob), download: `${course.title || 'trilha'}.trilha.json`.replace(/[\\/:*?"<>|]/g, '-') });
     document.body.append(a);
     a.click();
     setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 0);
   }
 
-  Duo.Share = { encode, decode, linkFor, downloadJson };
+  Duo.Share = { encode, decode, withIds, linkFor, downloadJson };
 })();
