@@ -232,6 +232,67 @@
       ];
     },
 
+    video(q, course, redraw) {
+      const { youtubeId, parseTime, formatTime } = Exercises;
+      const thumb = h('div', { class: 'video-thumb' });
+      function drawThumb() {
+        const id = youtubeId(q.url);
+        thumb.replaceChildren(id
+          ? h('img', { src: `https://i.ytimg.com/vi/${id}/mqdefault.jpg`, alt: 'Miniatura do vídeo', loading: 'lazy' })
+          : h('span', { class: 'muted small' }, 'A miniatura aparece aqui quando o link for válido.'));
+      }
+      const url = h('input', {
+        class: 'input', value: q.url, placeholder: 'https://www.youtube.com/watch?v=…',
+        onInput: e => {
+          q.url = e.target.value.trim();
+          // Link com tempo (?t=90 ou &t=1m30s) já preenche o início
+          const t = (q.url.match(/[?&]t=([0-9hms:]+)/) || [])[1];
+          if (t && !q.start && parseTime(t) != null) { q.start = parseTime(t); startIn.value = formatTime(q.start); }
+          autosave(course); drawThumb(); redraw();
+        },
+      });
+      const timeInput = (key, placeholder) => {
+        const inp = h('input', {
+          class: 'input time', value: q[key] != null ? formatTime(q[key]) : '', placeholder,
+          onInput: e => {
+            const v = parseTime(e.target.value);
+            q[key] = v;
+            inp.classList.toggle('invalid', !!e.target.value.trim() && v == null);
+            autosave(course); redraw();
+          },
+        });
+        return inp;
+      };
+      const startIn = timeInput('start', '0:00');
+      const endIn = timeInput('end', 'ex.: 1:45');
+      drawThumb();
+
+      const name = 'vans-' + q.id;
+      const rows = h('div', { class: 'opts-edit' });
+      function draw() {
+        rows.replaceChildren(...q.options.map((o, i) => h('div', { class: 'opt-row' + (q.answer === i ? ' correct' : '') },
+          h('input', { type: 'radio', name, checked: q.answer === i, title: 'Alternativa correta', onChange: () => { q.answer = i; autosave(course); draw(); redraw(); } }),
+          h('input', { class: 'input', value: o, placeholder: `Alternativa ${i + 1}`, onInput: e => { q.options[i] = e.target.value; autosave(course); redraw(); } }),
+          h('button', {
+            class: 'icon-btn danger', title: 'Remover', disabled: q.options.length <= 2,
+            onClick: () => { q.options.splice(i, 1); if (q.answer >= i && q.answer > 0) q.answer--; autosave(course); draw(); redraw(); },
+          }, '✕'))));
+      }
+      draw();
+      return [
+        h('label', { class: 'field' }, h('span', { class: 'field-label' }, 'Link do YouTube'), url),
+        thumb,
+        h('div', { class: 'row tight wrap' },
+          h('label', { class: 'field' }, h('span', { class: 'field-label' }, 'Começa em'), startIn),
+          h('label', { class: 'field' }, h('span', { class: 'field-label' }, 'Para em'), endIn)),
+        h('span', { class: 'help' }, 'Formato minutos:segundos (ex.: 2:15). O vídeo para aqui e a pergunta aparece.'),
+        field('Pergunta', q, 'prompt', course, { multiline: true, onInput: redraw }),
+        h('span', { class: 'field-label' }, 'Alternativas (marque a correta)'),
+        rows,
+        h('button', { class: 'btn small', disabled: q.options.length >= 5, onClick: () => { q.options.push(''); autosave(course); draw(); redraw(); } }, '+ Alternativa'),
+      ];
+    },
+
     forca(q, course, redraw) {
       return [
         field('Dica', q, 'prompt', course, { multiline: true, placeholder: 'Ex.: Glândula que produz a insulina', onInput: redraw }),

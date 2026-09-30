@@ -114,6 +114,46 @@
     return { entries, cells, rows, cols, disconnected };
   }
 
+  // ---------- Vídeo do YouTube ----------
+
+  /** Extrai o id do vídeo de links do YouTube (watch, youtu.be, shorts, embed). */
+  function youtubeId(url) {
+    const m = String(url || '').trim().match(/(?:youtube(?:-nocookie)?\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+    return m ? m[1] : null;
+  }
+
+  /** "1:30", "01:02:03", "90", "1m30s" → segundos (ou null). */
+  function parseTime(v) {
+    const t = String(v ?? '').trim().toLowerCase();
+    if (!t) return null;
+    if (/^\d+(:\d{1,2}){0,2}$/.test(t)) return t.split(':').reduce((acc, n) => acc * 60 + Number(n), 0);
+    const m = t.match(/^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?$/);
+    return m && (m[1] || m[2] || m[3]) ? (Number(m[1] || 0) * 3600 + Number(m[2] || 0) * 60 + Number(m[3] || 0)) : null;
+  }
+
+  function formatTime(sec) {
+    sec = Math.max(0, Math.round(sec || 0));
+    const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60;
+    return (h ? `${h}:${String(m).padStart(2, '0')}` : `${m}`) + ':' + String(s).padStart(2, '0');
+  }
+
+  /** Carrega a API de iframe do YouTube uma vez. Rejeita se não carregar (rede bloqueada, offline). */
+  let ytPromise = null;
+  function loadYouTube() {
+    if (window.YT && window.YT.Player) return Promise.resolve(window.YT);
+    if (ytPromise) return ytPromise;
+    ytPromise = new Promise((resolve, reject) => {
+      const timer = setTimeout(() => { ytPromise = null; reject(new Error('timeout')); }, 12000);
+      const prev = window.onYouTubeIframeAPIReady;
+      window.onYouTubeIframeAPIReady = () => { clearTimeout(timer); if (prev) prev(); resolve(window.YT); };
+      const tag = document.createElement('script');
+      tag.src = 'https://www.youtube.com/iframe_api';
+      tag.onerror = () => { clearTimeout(timer); ytPromise = null; tag.remove(); reject(new Error('load')); };
+      document.head.append(tag);
+    });
+    return ytPromise;
+  }
+
   const TYPES = {
     associar: {
       label: 'Associar pares', icon: '🔗', auto: true,
@@ -531,6 +571,98 @@
       },
     },
 
+    video: {
+      label: 'Pergunta no vídeo', icon: '🎬',
+      examples: 'Trecho de videoaula, documentário, experimento, música',
+      hint: 'Cole um link do YouTube e marque o trecho. O vídeo para no fim do trecho e a pergunta aparece.',
+      blank: () => ({ url: '', start: 0, end: null, prompt: '', options: ['', '', ''], answer: 0 }),
+      validate(q) {
+        if (!youtubeId(q.url)) return 'Cole um link válido do YouTube.';
+        if (!(q.end > (q.start || 0))) return 'Informe onde o vídeo para (depois do início).';
+        if (q.end - (q.start || 0) > 20 * 60) return 'Use trechos de até 20 minutos.';
+        if (!String(q.prompt || '').trim()) return 'Escreva a pergunta.';
+        const filled = (q.options || []).filter(o => o.trim());
+        if (filled.length < 2) return 'Preencha pelo menos 2 alternativas.';
+        if (!(q.options[q.answer] || '').trim()) return 'Marque uma alternativa correta preenchida.';
+        return null;
+      },
+      answerText: q => q.options[q.answer],
+      speechText: q => [q.prompt, ...q.options.filter(o => o.trim())].join('. '),
+      render(q, api) {
+        const id = youtubeId(q.url);
+        const start = q.start || 0;
+        const holder = h('div');
+        const frame = h('div', { class: 'video-frame' }, holder);
+        const info = h('p', { class: 'muted small video-info' }, `Assista ao trecho (${formatTime(start)} – ${formatTime(q.end)}). A pergunta aparece quando o vídeo parar.`);
+        const questionBox = h('div', { class: 'video-question', hidden: true });
+        const goBtn = h('button', { class: 'btn small', hidden: true, onClick: () => reveal() }, 'Responder agora');
+        const replayBtn = h('button', { class: 'btn small ghost', onClick: () => replay() }, '↺ Rever o trecho');
+        let player = null;
+        let poll = null;
+        let revealed = false;
+
+        // Pergunta: mesma mecânica da múltipla escolha
+        const opts = shuffle(q.options.map((t, i) => ({ t, i })).filter(o => o.t.trim()));
+        let sel = null;
+        const btns = opts.map((o, k) => {
+          const b = h('button', {
+            class: 'option',
+            onClick: () => { sel = o.i; btns.forEach(x => x.classList.remove('selected')); b.classList.add('selected'); api.setReady(true); },
+          }, h('span', { class: 'kbd' }, k + 1), h('span', null, o.t));
+          return b;
+        });
+        questionBox.append(h('h2', { class: 'ex-title' }, q.prompt), h('div', { class: 'options' }, btns));
+
+        function reveal() {
+          if (revealed) return;
+          revealed = true;
+          clearInterval(poll);
+          questionBox.hidden = false;
+          goBtn.hidden = true;
+          info.textContent = 'Agora responda:';
+          setTimeout(() => questionBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
+        }
+        function replay() {
+          if (!player || !player.seekTo) return;
+          player.seekTo(start, true);
+          player.playVideo();
+        }
+        function fallback(msg) {
+          frame.replaceChildren(h('div', { class: 'video-fallback' },
+            h('p', null, msg),
+            h('a', { class: 'btn small', href: `https://www.youtube.com/watch?v=${id}&t=${start}s`, target: '_blank', rel: 'noopener' }, 'Abrir no YouTube')));
+          replayBtn.hidden = true;
+          goBtn.hidden = false;
+        }
+
+        loadYouTube().then(YT => {
+          if (!holder.isConnected) return;
+          player = new YT.Player(holder, {
+            host: 'https://www.youtube-nocookie.com',
+            videoId: id,
+            playerVars: { start, end: q.end, rel: 0, playsinline: 1, modestbranding: 1 },
+            events: {
+              onStateChange: e => { if (e.data === YT.PlayerState.ENDED) reveal(); },
+              onError: () => fallback('Este vídeo não pode ser exibido aqui (removido ou com incorporação bloqueada).'),
+            },
+          });
+          // Garantia extra: alguns navegadores não disparam ENDED com o parâmetro "end"
+          poll = setInterval(() => {
+            if (!frame.isConnected) { clearInterval(poll); return; }
+            try { if (player.getCurrentTime && player.getCurrentTime() >= q.end - 0.3) { player.pauseVideo(); reveal(); } } catch { /* player ainda carregando */ }
+          }, 500);
+        }).catch(() => fallback('Não foi possível carregar o YouTube nesta rede. Assista pelo link e depois responda.'));
+
+        api.onCheck(() => ({ correct: sel === q.answer, answer: q.options[q.answer] }));
+        api.onKey(k => { if (revealed) { const n = Number(k); if (n >= 1 && n <= btns.length) btns[n - 1].click(); } });
+        return h('div', { class: 'ex' },
+          h('p', { class: 'ex-kicker' }, '🎬 Pergunta no vídeo'),
+          frame, info,
+          h('div', { class: 'row tight wrap' }, replayBtn, goBtn),
+          questionBox);
+      },
+    },
+
     digitar: {
       label: 'Digitar resposta', icon: '⌨️',
       examples: 'Resultado de conta · fórmula química · data',
@@ -562,5 +694,5 @@
     return t ? t.validate(q) : 'Tipo de exercício desconhecido.';
   }
 
-  Duo.Exercises = { TYPES, validate, parseBlanks, layoutCrossword };
+  Duo.Exercises = { TYPES, validate, parseBlanks, layoutCrossword, youtubeId, parseTime, formatTime };
 })();

@@ -30,6 +30,7 @@ com vidas, XP, sequência de dias e repetição dos exercícios errados.
 | 🔤 Forca | Dica + palavra secreta (acentos revelados junto com a letra) |
 | 🎧 Ditado | Frase + idioma; o aluno ouve (voz do navegador) e escreve |
 | ✖️ Cruzadinha | Palavras + dicas; a grade é montada automaticamente (prévia no editor) |
+| 🎬 Pergunta no vídeo | Link do YouTube + trecho (início/fim) + pergunta com alternativas; o vídeo para no fim do trecho e a pergunta aparece (player sem cookies, youtube-nocookie) |
 
 Em qualquer exercício: **🖼 imagem** (link ou enviada do computador, reduzida automaticamente) e
 botão **🔊 Ouvir** (lê a pergunta em voz alta — acessibilidade).
