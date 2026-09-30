@@ -397,3 +397,28 @@ select.input { width: auto; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .modal > * { flex-shrink: 0; }
 .toast { width: max-content; max-width: calc(100vw - 32px); text-align: center; }
+
+/* ---------- Cruzadinha ---------- */
+.cw-wrap { overflow-x: auto; display: flex; justify-content: center; padding: 4px 0; }
+.cw-grid { display: grid; gap: 2px; }
+.cw-box { position: relative; width: var(--cw-size); height: var(--cw-size); }
+.cw-cell {
+  width: 100%; height: 100%; padding: 0; text-align: center; text-transform: uppercase;
+  font: inherit; font-weight: 800; font-size: calc(var(--cw-size) * .5); color: var(--text);
+  border: 1.5px solid var(--border-strong); border-radius: 4px; background: var(--card); caret-color: transparent;
+}
+.cw-cell:focus { outline: none; border-color: var(--accent-dark); background: #fff3e6; }
+.cw-cell.active:not(:focus) { background: var(--primary-soft); border-color: var(--primary); }
+.cw-cell:disabled { opacity: 1; }
+.cw-num { position: absolute; top: 1px; left: 3px; font-size: calc(var(--cw-size) * .26); font-weight: 700; color: var(--muted); pointer-events: none; }
+.cw-clues { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.cw-clues h3 { font-size: .95rem; margin: 0 0 6px; color: var(--muted); }
+.cw-clues ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.cw-clues li { padding: 6px 10px; border-radius: 8px; cursor: pointer; font-size: .95rem; }
+.cw-clues li:hover { background: var(--bg-soft); }
+.cw-clues li.active { background: var(--primary-soft); }
+.cw-preview { display: flex; flex-direction: column; gap: 6px; align-self: stretch; }
+.cw-mini { display: grid; gap: 1px; }
+.cw-mini span { width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; background: var(--primary-soft); color: var(--primary-dark); border-radius: 2px; }
+@media (prefers-color-scheme: dark) { .cw-cell:focus { background: #3a2a18; } }
+.input.mono { font-family: ui-monospace, Consolas, monospace; font-size: .85rem; white-space: pre; }

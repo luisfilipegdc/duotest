@@ -201,6 +201,37 @@
       ];
     },
 
+    cruzadinha(q, course, redraw) {
+      const rows = h('div', { class: 'opts-edit' });
+      const preview = h('div', { class: 'cw-preview' });
+      function drawPreview() {
+        const L = Exercises.layoutCrossword(q.words);
+        if (!L.entries.length) { preview.replaceChildren(); return; }
+        const grid = h('div', { class: 'cw-mini', style: `grid-template-columns: repeat(${L.cols}, 16px); grid-template-rows: repeat(${L.rows}, 16px)` });
+        L.cells.forEach((ch, k) => {
+          const [r, c] = k.split(',').map(Number);
+          grid.append(h('span', { style: `grid-row: ${r + 1}; grid-column: ${c + 1}` }, ch));
+        });
+        preview.replaceChildren(h('span', { class: 'field-label' }, 'Prévia da grade'), grid,
+          L.disconnected ? h('span', { class: 'warn small' }, `⚠ ${L.disconnected} palavra(s) não cruzam com as outras e ficaram soltas. Troque ou adicione palavras com letras em comum.`) : '');
+      }
+      function draw() {
+        rows.replaceChildren(...q.words.map((w, i) => h('div', { class: 'pair-row' },
+          h('input', { class: 'input', value: w.answer, placeholder: 'Palavra', onInput: e => { w.answer = e.target.value; autosave(course); redraw(); drawPreview(); } }),
+          h('input', { class: 'input', value: w.clue, placeholder: 'Dica', onInput: e => { w.clue = e.target.value; autosave(course); redraw(); drawPreview(); } }),
+          h('button', { class: 'icon-btn danger', title: 'Remover', disabled: q.words.length <= 3, onClick: () => { q.words.splice(i, 1); autosave(course); draw(); redraw(); drawPreview(); } }, '✕'))));
+      }
+      draw();
+      drawPreview();
+      return [
+        field('Instrução', q, 'prompt', course, { placeholder: 'Complete a cruzadinha' }),
+        h('span', { class: 'field-label' }, 'Palavras e dicas (3 a 12; espaços e acentos são ignorados na grade)'),
+        rows,
+        h('button', { class: 'btn small', disabled: q.words.length >= 12, onClick: () => { q.words.push({ answer: '', clue: '' }); autosave(course); draw(); redraw(); } }, '+ Palavra'),
+        preview,
+      ];
+    },
+
     forca(q, course, redraw) {
       return [
         field('Dica', q, 'prompt', course, { multiline: true, placeholder: 'Ex.: Glândula que produz a insulina', onInput: redraw }),
@@ -322,6 +353,11 @@
         list,
         h('h2', { class: 'section-title' }, 'Adicionar exercício'),
         h('div', { class: 'type-grid' }, addButtons),
+        h('div', { class: 'row' },
+          h('button', {
+            class: 'btn',
+            onClick: () => Duo.Importer.open(qs => { lesson.questions.push(...qs); saveNow(course); drawAll(); }),
+          }, '📋 Importar de planilha')),
         h('div', { class: 'row sticky-actions' },
           h('button', {
             class: 'btn primary',

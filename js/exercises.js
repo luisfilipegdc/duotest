@@ -27,6 +27,93 @@
     return String(s || '').trim().split(/\s+/).filter(Boolean);
   }
 
+
+  /**
+   * Monta a grade da cruzadinha de forma determinística (todos os alunos veem a mesma).
+   * Coloca a palavra mais longa na horizontal e encaixa as outras onde cruzarem mais letras.
+   * Palavras que não cruzam com nenhuma ficam soltas abaixo (disconnected > 0).
+   */
+  function layoutCrossword(words) {
+    const items = (words || [])
+      .map((w, i) => ({ i, clue: String(w.clue || '').trim(), raw: String(w.answer || '').trim(), word: [...String(w.answer || '')].filter(isLetter).map(baseLetter).join('') }))
+      .filter(x => x.word.length >= 2 && x.clue);
+    const order = [...items].sort((a, b) => b.word.length - a.word.length || a.i - b.i);
+    const grid = new Map(); // "r,c" -> { ch, h, v }
+    const key = (r, c) => r + ',' + c;
+    const get = (r, c) => grid.get(key(r, c));
+    const entries = [];
+    let disconnected = 0;
+
+    function score(w, r, c, dir) {
+      const dr = dir === 'v' ? 1 : 0, dc = dir === 'h' ? 1 : 0;
+      if (get(r - dr, c - dc) || get(r + dr * w.length, c + dc * w.length)) return -1;
+      let hits = 0;
+      for (let k = 0; k < w.length; k++) {
+        const rr = r + dr * k, cc = c + dc * k, cell = get(rr, cc);
+        if (cell) {
+          if (cell.ch !== w[k] || cell[dir]) return -1;
+          hits++;
+        } else if (dir === 'h' ? (get(rr - 1, cc) || get(rr + 1, cc)) : (get(rr, cc - 1) || get(rr, cc + 1))) {
+          return -1;
+        }
+      }
+      return hits;
+    }
+    function place(item, r, c, dir) {
+      const dr = dir === 'v' ? 1 : 0, dc = dir === 'h' ? 1 : 0;
+      for (let k = 0; k < item.word.length; k++) {
+        const kk = key(r + dr * k, c + dc * k);
+        const cell = grid.get(kk) || { ch: item.word[k], h: false, v: false };
+        cell[dir] = true;
+        grid.set(kk, cell);
+      }
+      entries.push({ ...item, r, c, dir });
+    }
+
+    order.forEach((item, n) => {
+      if (n === 0) return place(item, 0, 0, 'h');
+      let best = null;
+      for (const [k, cell] of grid) {
+        const [cr, cc] = k.split(',').map(Number);
+        for (let j = 0; j < item.word.length; j++) {
+          if (item.word[j] !== cell.ch) continue;
+          for (const dir of ['v', 'h']) {
+            const r = dir === 'v' ? cr - j : cr, c = dir === 'h' ? cc - j : cc;
+            const sc = score(item.word, r, c, dir);
+            if (sc > 0 && (!best || sc > best.sc)) best = { r, c, dir, sc };
+          }
+        }
+      }
+      if (best) return place(item, best.r, best.c, best.dir);
+      // Sem cruzamento: coloca solta abaixo da grade
+      disconnected++;
+      const rows = [...grid.keys()].map(k => Number(k.split(',')[0]));
+      const cols = [...grid.keys()].map(k => Number(k.split(',')[1]));
+      let r = Math.max(...rows) + 2;
+      while (score(item.word, r, Math.min(...cols), 'h') < 0) r++;
+      place(item, r, Math.min(...cols), 'h');
+    });
+
+    if (!entries.length) return { entries: [], cells: new Map(), rows: 0, cols: 0, disconnected: 0 };
+    const minR = Math.min(...[...grid.keys()].map(k => Number(k.split(',')[0])));
+    const minC = Math.min(...[...grid.keys()].map(k => Number(k.split(',')[1])));
+    const cells = new Map();
+    for (const [k, cell] of grid) {
+      const [r, c] = k.split(',').map(Number);
+      cells.set(key(r - minR, c - minC), cell.ch);
+    }
+    entries.forEach(e => { e.r -= minR; e.c -= minC; });
+    // Numeração tradicional: da esquerda para a direita, de cima para baixo
+    const starts = [...new Set(entries.map(e => key(e.r, e.c)))]
+      .map(k => k.split(',').map(Number)).sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    const numOf = new Map(starts.map(([r, c], i) => [key(r, c), i + 1]));
+    entries.forEach(e => { e.num = numOf.get(key(e.r, e.c)); });
+    entries.sort((a, b) => a.num - b.num);
+    const rows = Math.max(...[...cells.keys()].map(k => Number(k.split(',')[0]))) + 1;
+    const cols = Math.max(...[...cells.keys()].map(k => Number(k.split(',')[1]))) + 1;
+    return { entries, cells, rows, cols, disconnected };
+  }
+
   const TYPES = {
     associar: {
       label: 'Associar pares', icon: '🔗', auto: true,
@@ -351,6 +438,99 @@
       },
     },
 
+    cruzadinha: {
+      label: 'Cruzadinha', icon: '✖️',
+      examples: 'Vocabulário · conceitos-chave · nomes de órgãos, países, autores',
+      hint: 'Palavras e dicas. A grade é montada automaticamente, cruzando as palavras.',
+      blank: () => ({ prompt: 'Complete a cruzadinha', words: [{ answer: '', clue: '' }, { answer: '', clue: '' }, { answer: '', clue: '' }] }),
+      validate(q) {
+        const words = q.words || [];
+        const filled = words.filter(w => w.answer.trim() && w.clue.trim());
+        if (filled.length < 3) return 'Preencha pelo menos 3 palavras com dica.';
+        if (filled.length !== words.length) return 'Há palavras ou dicas vazias.';
+        const long = words.find(w => [...w.answer].filter(isLetter).length > 15);
+        if (long) return `"${long.answer}" é longa demais (máx. 15 letras).`;
+        if (words.some(w => [...w.answer].filter(isLetter).length < 2)) return 'Cada palavra precisa ter pelo menos 2 letras.';
+        return null;
+      },
+      answerText: q => q.words.map(w => w.answer.trim()).join(', '),
+      speechText: q => q.words.map((w, i) => `${i + 1}: ${w.clue}`).join('. '),
+      render(q, api) {
+        const L = layoutCrossword(q.words);
+        const inputs = new Map();
+        let current = L.entries[0];
+        const cellKey = (r, c) => r + ',' + c;
+        const cellsOf = e => Array.from({ length: e.word.length }, (_, k) => cellKey(e.r + (e.dir === 'v' ? k : 0), e.c + (e.dir === 'h' ? k : 0)));
+        const clueEls = new Map();
+
+        function highlight() {
+          inputs.forEach(inp => inp.classList.remove('active'));
+          cellsOf(current).forEach(k => inputs.get(k).classList.add('active'));
+          clueEls.forEach((el, e) => el.classList.toggle('active', e === current));
+        }
+        function entryAt(k, prefer) {
+          const all = L.entries.filter(e => cellsOf(e).includes(k));
+          return all.find(e => e.dir === prefer) || all[0];
+        }
+        function refresh() {
+          api.setReady([...inputs.values()].every(i => i.value));
+        }
+        const grid = h('div', { class: 'cw-grid', style: `--cw-size: min(38px, calc((100vw - 48px) / ${L.cols})); grid-template-columns: repeat(${L.cols}, var(--cw-size)); grid-template-rows: repeat(${L.rows}, var(--cw-size))` });
+        const numbers = new Map(L.entries.map(e => [cellKey(e.r, e.c), e.num]));
+        L.cells.forEach((ch, k) => {
+          const [r, c] = k.split(',').map(Number);
+          const inp = h('input', {
+            class: 'cw-cell', maxlength: 2, autocomplete: 'off', autocapitalize: 'characters', spellcheck: 'false',
+            'aria-label': `Linha ${r + 1}, coluna ${c + 1}`,
+            onFocus: () => { if (!cellsOf(current).includes(k)) current = entryAt(k, current.dir); highlight(); },
+            // Tocar de novo numa casa de cruzamento troca a direção (horizontal ↔ vertical)
+            onMousedown: () => { inp.dataset.wasFocused = document.activeElement === inp ? '1' : ''; },
+            onClick: () => {
+              if (!inp.dataset.wasFocused) return;
+              const other = entryAt(k, current.dir === 'h' ? 'v' : 'h');
+              if (other && other !== current) { current = other; highlight(); }
+            },
+            onInput: e => {
+              const v = [...e.target.value.toUpperCase()].filter(isLetter).pop() || '';
+              e.target.value = v;
+              if (v) {
+                const list = cellsOf(current), pos = list.indexOf(k);
+                const next = list[pos + 1];
+                if (next) { inputs.get(next).focus(); inputs.get(next).select(); }
+              }
+              refresh();
+            },
+            onKeydown: e => {
+              if (e.key === 'Backspace' && !inp.value) {
+                const list = cellsOf(current), pos = list.indexOf(k);
+                if (pos > 0) { e.preventDefault(); const prev = inputs.get(list[pos - 1]); prev.value = ''; prev.focus(); refresh(); }
+              }
+            },
+          });
+          inputs.set(k, inp);
+          grid.append(h('div', { class: 'cw-box', style: `grid-row: ${r + 1}; grid-column: ${c + 1}` },
+            numbers.has(k) ? h('span', { class: 'cw-num' }, numbers.get(k)) : '', inp));
+        });
+        const clueList = dir => L.entries.filter(e => e.dir === dir).map(e => {
+          const el = h('li', { onClick: () => { current = e; const first = inputs.get(cellsOf(e)[0]); first.focus(); first.select(); highlight(); } },
+            h('strong', null, e.num + '. '), e.clue, h('span', { class: 'muted' }, ` (${e.word.length})`));
+          clueEls.set(e, el);
+          return el;
+        });
+        api.onCheck(() => ({
+          correct: [...inputs].every(([k, inp]) => baseLetter(inp.value) === L.cells.get(k)),
+          answer: L.entries.map(e => `${e.num}. ${e.raw}`).join('  '),
+        }));
+        setTimeout(() => { const first = inputs.get(cellsOf(current)[0]); if (first && window.matchMedia('(pointer: fine)').matches) first.focus(); highlight(); }, 50);
+        return h('div', { class: 'ex' },
+          h('h2', { class: 'ex-title' }, q.prompt || 'Complete a cruzadinha'),
+          h('div', { class: 'cw-wrap' }, grid),
+          h('div', { class: 'cw-clues' },
+            L.entries.some(e => e.dir === 'h') && h('div', null, h('h3', null, '→ Horizontais'), h('ol', null, clueList('h'))),
+            L.entries.some(e => e.dir === 'v') && h('div', null, h('h3', null, '↓ Verticais'), h('ol', null, clueList('v')))));
+      },
+    },
+
     digitar: {
       label: 'Digitar resposta', icon: '⌨️',
       examples: 'Resultado de conta · fórmula química · data',
@@ -382,5 +562,5 @@
     return t ? t.validate(q) : 'Tipo de exercício desconhecido.';
   }
 
-  Duo.Exercises = { TYPES, validate, parseBlanks };
+  Duo.Exercises = { TYPES, validate, parseBlanks, layoutCrossword };
 })();

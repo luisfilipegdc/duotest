@@ -36,9 +36,9 @@ compartilhar por link (a trilha vai compactada dentro do link) e exportar/import
 5. **Monetização (produto):** núcleo gratuito e sem limite de atividades; plano Escola (gestão, relatórios, IA)
 
 ## Prioridades após a análise do mural (ver REFERENCIAS.md)
-1. ✅ **IA: gerar trilha a partir de texto, PDF ou "folhinha" (imagem)** — código pronto, **ativação adiada** (Supabase + chave da API); ⏳ planilha
+1. ✅ **IA: gerar trilha a partir de texto, PDF ou "folhinha" (imagem)** — código pronto, **ativação adiada** (Supabase + chave da API); ✅ importar de planilha
 2. **Modelo "público = grátis e ilimitado"**; privado, turmas e IA no plano pago
-3. ✅ Novos tipos: imagem, linha do tempo, forca, ditado, ler em voz alta — ⏳ fórmulas, cruzadinha, clicar na imagem, vídeo
+3. ✅ Novos tipos: imagem, linha do tempo, forca, ditado, ler em voz alta — ✅ cruzadinha — ⏳ fórmulas, clicar na imagem, vídeo
 4. Lição do dia pelo WhatsApp (link + lembrete)
 5. Modos de jogo sobre as mesmas questões (corrida, forca, desafio da turma)
 6. Acessibilidade (leitura em voz alta, fonte para dislexia, alto contraste)

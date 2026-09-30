@@ -109,6 +109,12 @@
             { a: 'Bahia', b: 'Salvador' }, { a: 'Pará', b: 'Belém' }, { a: 'Paraná', b: 'Curitiba' }, { a: 'Goiás', b: 'Goiânia' }, { a: 'Ceará', b: 'Fortaleza' }] }),
           q('multipla', { prompt: 'Qual é a maior região do Brasil em área?', options: ['Norte', 'Nordeste', 'Centro-Oeste', 'Sudeste'], answer: 0 }),
           q('forca', { prompt: 'Capital do Brasil', answer: 'Brasília' }),
+          q('cruzadinha', { prompt: 'Complete a cruzadinha das regiões', words: [
+            { answer: 'Nordeste', clue: 'Região com nove estados, entre eles Bahia e Ceará' },
+            { answer: 'Sul', clue: 'Região mais fria do Brasil' },
+            { answer: 'Norte', clue: 'Maior região em área' },
+            { answer: 'Sudeste', clue: 'Região mais populosa' },
+            { answer: 'Amazonas', clue: 'Maior estado do Brasil' }] }),
           q('vf', { prompt: 'O Brasil é dividido em cinco regiões.', answer: true }),
         ] },
       ],

@@ -29,9 +29,14 @@ com vidas, XP, sequência de dias e repetição dos exercícios errados.
 | 📅 Linha do tempo / sequência | Itens na ordem correta (datas, etapas, fases) — o aluno recebe embaralhado |
 | 🔤 Forca | Dica + palavra secreta (acentos revelados junto com a letra) |
 | 🎧 Ditado | Frase + idioma; o aluno ouve (voz do navegador) e escreve |
+| ✖️ Cruzadinha | Palavras + dicas; a grade é montada automaticamente (prévia no editor) |
 
 Em qualquer exercício: **🖼 imagem** (link ou enviada do computador, reduzida automaticamente) e
 botão **🔊 Ouvir** (lê a pergunta em voz alta — acessibilidade).
+
+**📋 Importar de planilha** (no editor da lição): cole do Google Planilhas/Excel ou envie `.csv` com
+*coluna A = pergunta/termo, B = resposta, C/D/E = alternativas erradas (opcional)* e escolha criar como múltipla
+escolha, associar pares, cruzadinha, forca e/ou digitar. Há um modelo para baixar.
 
 Trilhas de exemplo: Ciências, Inglês, História, Língua Portuguesa, Matemática e Geografia.
 
@@ -46,6 +51,8 @@ js/exercises.js  tipos de exercício: validação e tela do aluno
 js/home.js       tela inicial
 js/course.js     mapa da trilha
 js/editor.js     editor do professor
+js/importer.js   importar exercícios de planilha (CSV/colar)
+js/ai.js         criar trilha com IA (desativado até configurar js/config.js)
 js/player.js     modo aluno (lição)
 js/app.js        rotas
 ```
