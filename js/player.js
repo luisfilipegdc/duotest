@@ -99,7 +99,7 @@
           state.queue.push({ q: item.q, retry: true });
         }
         drawHud();
-        const cont = h('button', { class: `btn wide ${result.correct ? 'primary' : 'danger-solid'}`, onClick: () => { state.pos++; next(); } }, 'Continuar');
+        const cont = h('button', { class: `btn wide ${result.correct ? 'success-solid' : 'danger-solid'}`, onClick: () => { state.pos++; next(); } }, 'Continuar');
         footer.className = `play-footer ${result.correct ? 'ok' : 'bad'}`;
         footer.replaceChildren(h('div', { class: 'footer-inner' },
           h('div', { class: 'feedback', role: 'status' },

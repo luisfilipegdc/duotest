@@ -14,14 +14,13 @@
     const nodes = lessons.map((l, i) => {
       const p = Store.lessonProgress(c.id, l.id);
       const state = p ? 'done' : i === current ? 'current' : 'locked';
-      const offset = [0, 1, 2, 1, 0, -1, -2, -1][i % 8] * 56;
       const stars = p ? (p.best >= 1 ? 3 : p.best >= 0.8 ? 2 : 1) : 0;
-      return h('div', { class: `node-wrap ${state}`, style: `transform: translateX(${offset}px)` },
+      return h('div', { class: `node-wrap ${state}` },
         h(state === 'locked' ? 'span' : 'a', {
           class: `node ${state}`,
           href: state === 'locked' ? null : `#/jogar/${c.id}/${l.id}`,
           'aria-label': `${l.title}${state === 'locked' ? ' (bloqueada)' : ''}`,
-        }, state === 'done' ? '✓' : state === 'locked' ? '🔒' : '★'),
+        }, state === 'done' ? '✓' : state === 'locked' ? '🔒' : i + 1),
         state === 'current' && h('span', { class: 'start-bubble' }, i === 0 ? 'Começar' : 'Próxima'),
         h('span', { class: 'node-label' }, l.title),
         p && h('span', { class: 'node-stars', 'aria-label': `${stars} de 3 estrelas` }, '★'.repeat(stars) + '☆'.repeat(3 - stars)));

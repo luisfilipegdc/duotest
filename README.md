@@ -44,3 +44,7 @@ js/app.js        rotas
 
 Sem dependências e sem etapa de build. Os dados ficam no navegador (localStorage).
 Planejamento e próximos passos em [PLANO.md](PLANO.md); pesquisa em [CONCORRENTES.md](CONCORRENTES.md).
+
+## Publicar (GitHub Pages)
+Settings → Pages → *Deploy from a branch* → escolha a branch e a pasta `/ (root)` → Save.
+O site fica em `https://<usuario>.github.io/<repositorio>/`. O arquivo `.nojekyll` faz o GitHub servir os arquivos como estão.
