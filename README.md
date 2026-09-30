@@ -58,6 +58,8 @@ Settings → Pages → *Deploy from a branch* → escolha a branch e a pasta `/ 
 O site fica em `https://<usuario>.github.io/<repositorio>/`. O arquivo `.nojekyll` faz o GitHub servir os arquivos como estão.
 
 ## IA: criar trilha a partir da folhinha
+> **Status:** código pronto, **ainda não ativado**. Os botões de IA só aparecem depois que `js/config.js` for preenchido.
+
 O professor clica em **✨ Criar com IA**, envia fotos/PDF da folhinha (ou cola o texto), escolhe
 matéria, série, quantidade e tipos de exercício, e a trilha gerada abre no editor para revisão.
 No editor de uma trilha, **✨ Lições com IA** adiciona lições novas à trilha existente.
