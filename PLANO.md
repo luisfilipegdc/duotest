@@ -25,11 +25,14 @@ Plataforma no estilo Duolingo para **qualquer professor, de qualquer matéria**,
 4. Produtividade: importar planilha, gerar exercícios com IA
 
 ## Perguntas em aberto
-1. Público (Fundamental, Médio, Superior)?
-2. Resultados do aluno já no MVP?
+1. ~~Público~~ → **todos os públicos**
+2. ~~Resultados no MVP?~~ → **não, sem notas por enquanto** (opção A)
 3. Celular ou computador?
 4. Nome do produto?
 5. Uso interno ou produto para muitos professores?
+
+## Concorrentes
+Ver `CONCORRENTES.md`.
 
 ## Status
 Esqueleto inicial em `index.html` e `js/` (utilitários, armazenamento, compartilhamento). Telas ainda não implementadas — aguardando fechamento do plano.
